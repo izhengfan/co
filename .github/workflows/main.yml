@@ -1,0 +1,25 @@
+name: build
+
+on: [push]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [windows-latest]
+
+    runs-on: ${{ matrix.os }}
+    
+    steps:
+    - uses: actions/checkout@v1
+    - uses: xmake-io/github-action-setup-xmake@v1
+      with:
+        xmake-version: v2.2.8
+    - name: build
+      env:
+        CI: true
+      run: |
+        xmake f -a x86
+        xmake --all
+        xmake f -a x64
+        xmake --all

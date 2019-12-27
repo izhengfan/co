@@ -5,10 +5,32 @@
 
 #include <intrin.h>
 
-#ifndef _WIN64
-#define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
-#endif
+//#ifndef _WIN64
+//#define WIN32_LEAN_AND_MEAN
+//#include <Windows.h>
+//#endif
+#ifdef __cplusplus
+extern "C" {
+#endif 
+
+__int64 _InterlockedIncrement64(__int64 volatile* Dest);
+#pragma intrinsic(_InterlockedIncrement64)
+__int64 _InterlockedDecrement64(__int64 volatile* Dest);
+#pragma intrinsic(_InterlockedDecrement64)
+__int64 _InterlockedExchangeAdd64(__int64 volatile* Dest, __int64 value);
+#pragma intrinsic(_InterlockedExchangeAdd64)
+__int64 _InterlockedOr64(__int64 volatile* Dest, __int64 value);
+#pragma intrinsic(_InterlockedOr64)
+__int64 _InterlockedAnd64(__int64 volatile* Dest, __int64 value);
+#pragma intrinsic(_InterlockedAnd64)
+__int64 _InterlockedXor64(__int64 volatile* Dest, __int64 value);
+#pragma intrinsic(_InterlockedXor64)
+__int64 _InterlockedExchange64(__int64 volatile* Dest, __int64 value);
+#pragma intrinsic(_InterlockedExchange64)
+
+#ifdef __cplusplus
+}
+#endif 
 
 namespace xx {
 
