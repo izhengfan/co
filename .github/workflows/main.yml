@@ -20,6 +20,8 @@ jobs:
         CI: true
       run: |
         xmake f -a x86
-        xmake --all
+        xmake -a
+        xmake run unitest -a
         xmake f -a x64
-        xmake --all
+        xmake -a
+        xmake run unitest -a
