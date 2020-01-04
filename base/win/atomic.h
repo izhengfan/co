@@ -5,32 +5,21 @@
 
 #include <intrin.h>
 
-//#ifndef _WIN64
-//#define WIN32_LEAN_AND_MEAN
-//#include <Windows.h>
-//#endif
-#ifdef __cplusplus
+#ifndef _WIN64
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
 extern "C" {
-#endif 
-
-__int64 _InterlockedIncrement64(__int64 volatile* Dest);
-#pragma intrinsic(_InterlockedIncrement64)
-__int64 _InterlockedDecrement64(__int64 volatile* Dest);
-#pragma intrinsic(_InterlockedDecrement64)
-__int64 _InterlockedExchangeAdd64(__int64 volatile* Dest, __int64 value);
-#pragma intrinsic(_InterlockedExchangeAdd64)
-__int64 _InterlockedOr64(__int64 volatile* Dest, __int64 value);
-#pragma intrinsic(_InterlockedOr64)
-__int64 _InterlockedAnd64(__int64 volatile* Dest, __int64 value);
-#pragma intrinsic(_InterlockedAnd64)
-__int64 _InterlockedXor64(__int64 volatile* Dest, __int64 value);
-#pragma intrinsic(_InterlockedXor64)
-__int64 _InterlockedExchange64(__int64 volatile* Dest, __int64 value);
-#pragma intrinsic(_InterlockedExchange64)
-
-#ifdef __cplusplus
+__int64 _InterlockedCompareExchange64(__int64 volatile* Destination, __int64 Exchange, __int64 Comperand);
+#pragma intrinsic(_InterlockedCompareExchange64)
 }
-#endif 
+#define _InterlockedIncrement64    InterlockedIncrement64
+#define _InterlockedDecrement64    InterlockedDecrement64
+#define _InterlockedExchangeAdd64  InterlockedExchangeAdd64
+#define _InterlockedOr64           InterlockedOr64
+#define _InterlockedAnd64          InterlockedAnd64
+#define _InterlockedXor64          InterlockedXor64
+#define _InterlockedExchange64     InterlockedExchange64
+#endif
 
 namespace xx {
 
