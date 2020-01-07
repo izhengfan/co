@@ -1,6 +1,6 @@
 # Basic
 
-![](https://github.com/idealvin/co/workflows/build/badge.svg)
+![](../../workflows/build/badge.svg)
 
 `CO` 是一个优雅、高效的 C++ 基础库，支持 Linux, Windows 与 Mac 平台。  
 
