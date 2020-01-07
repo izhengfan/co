@@ -3,7 +3,7 @@ name: build
 on: [push]
 
 jobs:
-  build:
+  build-windows:
     strategy:
       matrix:
         os: [windows-latest]
@@ -35,3 +35,23 @@ jobs:
         xmake run unitest -a
 
 
+  build-unix:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macOS-latest]
+
+    runs-on: ${{ matrix.os }}
+    
+    steps:
+    - uses: actions/checkout@v1
+    - uses: xmake-io/github-action-setup-xmake@v1
+      with:
+        xmake-version: v2.2.8
+    - name: build
+      env:
+        CI: true
+      run: |
+        xmake -a
+    - name: unitest
+      run: |
+        xmake run unitest -a
