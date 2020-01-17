@@ -5,7 +5,7 @@
 #include "atomic.h"
 #include "thread.h"
 
-#ifdef _WIN32
+#ifdef _MSC_VER
 #pragma warning (disable:4722)
 #endif
 
@@ -14,6 +14,7 @@ DEC_int32(min_log_level);
 namespace ___ {
 namespace log {
 
+// log::init() must be called once at the beginning of main().
 void init();
 
 // Write all buffered logs to destination and stop the logging thread.
