@@ -1,0 +1,30 @@
+name: Windows Build
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v1
+    - uses: xmake-io/github-action-setup-xmake@v1
+      with:
+        xmake-version: v2.2.8
+    - name: build-x86
+      env:
+        CI: true
+      run: |
+        xmake f -a x86
+        xmake -a
+    - name: unitest-x86
+      run: |
+        xmake run unitest -a
+    - name: build-x64
+      env:
+        CI: true
+      run: |
+        xmake f -a x64
+        xmake -a
+    - name: unitest-x64
+      run: |
+        xmake run unitest -a

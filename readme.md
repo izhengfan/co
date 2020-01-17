@@ -3,6 +3,8 @@
 - [中文](readme_cn.md)
 - [English](readme.md)
 
+[![](../../workflows/Windows%20Build/badge.svg)](../../actions?query=workflow%3A"Windows+Build")  [![](../../workflows/Unix%20Build/badge.svg)](../../actions?query=workflow%3A"Unix+Build") 
+
 `CO` is an elegant and efficient C++ base library that supports Linux, Windows and Mac platforms.
 
 `CO` pursues minimalism and efficiency. It does not rely on third-party libraries such as [boost](https://www.boost.org/), and uses only a few C++11 features.
