@@ -390,14 +390,14 @@ inline const char* read_token(const char* b, const char* e, void** v) {
  * res: parse result
  * s: save the keys
  */
-const char* parse_array(const char* b, const char* e, Value* res, fastream* s, size_t keys_len);
+const char* parse_array(const char* b, const char* e, Value* res, fastream* s, size_t buflen);
 
-const char* parse_json(const char* b, const char* e, Value* res, fastream* s, size_t keys_len) {
+const char* parse_json(const char* b, const char* e, Value* res, fastream* s, size_t buflen) {
     const char* key;
     res->set_object();
-    if (keys_len > 0) {
+    if (buflen > 0) {
         if (s->capacity() == 0) {
-            new (s) fastream(keys_len);
+            new (s) fastream(buflen);
             s->append((uint32)1);
         } else {
             ++(*(uint32*)s->data());
@@ -431,9 +431,9 @@ const char* parse_json(const char* b, const char* e, Value* res, fastream* s, si
             if (*b == '"') {
                 b = read_string(b + 1, e, &v);
             } else if (*b == '{') {
-                b = parse_json(b + 1, e, (Value*)&v, s, keys_len);
+                b = parse_json(b + 1, e, (Value*)&v, s, buflen);
             } else if (*b == '[') {
-                b = parse_array(b + 1, e, (Value*)&v, s, keys_len);
+                b = parse_array(b + 1, e, (Value*)&v, s, buflen);
             } else {
                 b = read_token(b, e, &v);
             }
@@ -460,7 +460,7 @@ const char* parse_json(const char* b, const char* e, Value* res, fastream* s, si
     return 0;
 }
 
-const char* parse_array(const char* b, const char* e, Value* res, fastream* s, size_t keys_len) {
+const char* parse_array(const char* b, const char* e, Value* res, fastream* s, size_t buflen) {
     res->set_array();
 
     for (; b < e; ++b) {
@@ -471,9 +471,9 @@ const char* parse_array(const char* b, const char* e, Value* res, fastream* s, s
         if (*b == '"') {
             b = read_string(b + 1, e, &v);
         } else if (*b == '{') {
-            b = parse_json(b + 1, e, (Value*)&v, s, keys_len);
+            b = parse_json(b + 1, e, (Value*)&v, s, buflen);
         } else if (*b == '[') {
-            b = parse_array(b + 1, e, (Value*)&v, s, keys_len);
+            b = parse_array(b + 1, e, (Value*)&v, s, buflen);
         } else {
             b = read_token(b, e, &v);
         }
@@ -496,7 +496,7 @@ const char* parse_array(const char* b, const char* e, Value* res, fastream* s, s
     return 0;
 }
 
-bool Value::parse_from(const char* s, size_t n, size_t keys_len) {
+bool Value::parse_from(const char* s, size_t n, size_t buflen) {
     if (unlikely(_mem)) this->reset();
 
     const char* p = s;
@@ -505,12 +505,12 @@ bool Value::parse_from(const char* s, size_t n, size_t keys_len) {
     if (unlikely(p == e)) return false;
 
     char buf[sizeof(fastream)] = { 0 };
-    if (keys_len == 0 && n > 4) keys_len = n;
+    if (buflen == 0 && n > 4) buflen = n;
 
     if (*p == '{') {
-        p = parse_json(p + 1, e, this, (fastream*)buf, keys_len);
+        p = parse_json(p + 1, e, this, (fastream*)buf, buflen);
     } else if (*p == '[') {
-        p = parse_array(p + 1, e, this, (fastream*)buf, keys_len);
+        p = parse_array(p + 1, e, this, (fastream*)buf, buflen);
     } else {
         return false;
     }
