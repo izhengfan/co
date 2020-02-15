@@ -1,5 +1,5 @@
 file(GLOB SRC_FILES *.cc)
-include_directories(${CMAKE_SOURCE_DIR})
+include_directories(${PROJECT_SOURCE_DIR})
 
 add_executable(rpcgen ${SRC_FILES})
 list(APPEND LIBS_TO_LINK base)
