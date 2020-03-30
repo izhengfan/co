@@ -1,60 +1,40 @@
 #pragma once
 
-#ifdef _MSC_VER
-#pragma warning (disable:4200)
-#endif
-
 #include "atomic.h"
 #include <assert.h>
-#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <string>
 #include <ostream>
 
-// !! max length: 4G - 1
 class fastring {
   public:
     static const size_t npos = (size_t)-1;
 
     constexpr fastring() noexcept : _p(0) {}
 
-    explicit fastring(size_t cap) {
-        this->_Init(cap);
-    }
+    explicit fastring(size_t cap);
 
-    fastring(const void* s, size_t n) {
-        this->_Init(n + 1, n);
-        memcpy(_p->s, s, n);
-    }
-
+    fastring(const void* s, size_t n);
     fastring(const char* s);
 
-    fastring(size_t n, char c) {
-        this->_Init(n + 1, n);
-        memset(_p->s, c, n);
-    }
+    fastring(size_t n, char c);
 
-    fastring(char c, size_t n) {
-        this->_Init(n + 1, n);
-        memset(_p->s, c, n);
-    }
-
-    static const size_t header_size() {
-        return sizeof(_Mem);
-    }
+    fastring(char c, size_t n) : fastring(n, c) {}
 
     static fastring from_raw_buffer(char* p, size_t cap, size_t size) {
         fastring s;
-        s._p = (_Mem*) p;
-        s._p->cap = (uint32_t) (cap - sizeof(_Mem));
-        s._p->size = (uint32_t) (size - sizeof(_Mem));
+        s._p = (_Mem*) malloc(sizeof(_Mem));
+        s._p->cap = cap;
+        s._p->size = size;
         s._p->refn = 1;
+        s._p->s = p;
         return s;
     }
 
     ~fastring() {
         if (!_p) return;
-        if (atomic_dec(&_p->refn) == 0) free(_p);
+        if (this->_UnRef() == 0) { free(_p->s); free(_p); }
         _p = 0;
     }
 
@@ -63,11 +43,11 @@ class fastring {
     }
 
     fastring(const fastring& s) : _p(s._p) {
-        if (_p) atomic_inc(&_p->refn);
+        if (_p) this->_Ref();
     }
 
     fastring& operator=(fastring&& s) noexcept {
-        if (_p && atomic_dec(&_p->refn) == 0) free(_p);
+        if (_p && this->_UnRef() == 0) { free(_p->s); free(_p); }
         _p = s._p;
         s._p = 0;
         return *this;
@@ -75,13 +55,14 @@ class fastring {
 
     fastring& operator=(const fastring& s) {
         if (&s != this) {
-            if (_p && atomic_dec(&_p->refn) == 0) free(_p);
+            if (_p && this->_UnRef() == 0) { free(_p->s); free(_p); }
             _p = s._p;
-            if (_p) atomic_inc(&_p->refn);
+            if (_p) this->_Ref();
         }
         return *this;
     }
 
+    fastring& operator=(const std::string& s);
     fastring& operator=(const char* s);
 
     const char* data() const {
@@ -93,7 +74,7 @@ class fastring {
     }
 
     bool empty() const {
-        return !_p || _p->size == 0;
+        return this->size() == 0;
     }
 
     size_t capacity() const {
@@ -111,14 +92,12 @@ class fastring {
         if (_p) _p->size = 0;
     }
 
+    void reserve(size_t n);
+
     // !! newly allocated memory is not initialized
     void resize(size_t n) {
-        _p ? this->_Reserve(n) : this->_Init(n);
-        _p->size = (uint32_t) n;
-    }
-
-    void reserve(size_t n) {
-        _p ? this->_Reserve(n) : this->_Init(n);
+        this->reserve(n);
+        _p->size = n;
     }
 
     char& back() const {
@@ -141,18 +120,9 @@ class fastring {
         return this->_Append_safe(s, strlen(s));
     }
 
-    fastring& append(char c) {
-        _p ? this->_Ensure(1) : this->_Init(16);
-        _p->s[_p->size++] = c;
-        return *this;
-    }
+    fastring& append(char c);
 
-    fastring& append(char c, size_t n) {
-        _p ? this->_Ensure(n) : this->_Init(n + 1);
-        memset(_p->s + _p->size, c, n);
-        _p->size += (uint32_t) n;
-        return *this;
-    }
+    fastring& append(char c, size_t n);
 
     fastring& append(size_t n, char c) {
         return this->append(c, n);
@@ -160,8 +130,7 @@ class fastring {
 
     fastring& append(const fastring& s);
 
-    template<typename S>
-    fastring& append(const S& s) {
+    fastring& append(const std::string& s) {
         return this->_Append(s.data(), s.size());
     }
 
@@ -173,8 +142,7 @@ class fastring {
         return this->append(s);
     }
 
-    template<typename S>
-    fastring& operator+=(const S& s) {
+    fastring& operator+=(const std::string& s) {
         return this->append(s);
     }
 
@@ -188,12 +156,12 @@ class fastring {
 
     fastring substr(size_t pos) const {
         if (pos >= this->size()) return fastring();
-        return fastring(_p->s + pos, (size_t)_p->size - pos);
+        return fastring(_p->s + pos, _p->size - pos);
     }
 
     fastring substr(size_t pos, size_t len) const {
         if (pos >= this->size()) return fastring();
-        size_t n = (size_t)_p->size - pos;
+        size_t n = _p->size - pos;
         return fastring(_p->s + pos, len < n ? len : n);
     }
 
@@ -205,25 +173,53 @@ class fastring {
 
     size_t find(char c, size_t pos) const {
         if (pos >= this->size()) return npos;
-        char* p = (char*) memchr(_p->s + pos, c, (size_t)_p->size - pos);
+        char* p = (char*) memchr(_p->s + pos, c, _p->size - pos);
         return p ? p - _p->s : npos;
     }
 
-    size_t find(const char* s) const;
-    size_t find(const char* s, size_t pos) const;
+    size_t find(const char* s) const {
+        if (this->empty()) return npos;
+        const char* p = strstr(this->c_str(), s);
+        return p ? p - _p->s : npos;
+    }
 
-    size_t rfind(char c) const;
+    size_t find(const char* s, size_t pos) const {
+        if (pos >= this->size()) return npos;
+        const char* p = strstr(this->c_str() + pos, s);
+        return p ? p - _p->s : npos;
+    }
+
+    size_t rfind(char c) const {
+        if (this->empty()) return npos;
+        const char* p = strrchr(this->c_str(), c);
+        return p ? p - _p->s : npos;
+    }
+
     size_t rfind(const char* s) const;
 
-    size_t find_first_of(const char* s) const;
-    size_t find_first_not_of(const char* s) const;
-    size_t find_first_not_of(char c) const;
+    size_t find_first_of(const char* s) const {
+        if (this->empty()) return npos;
+        size_t r = strcspn(this->c_str(), s);
+        return _p->s[r] ? r : npos;
+    }
+
+    size_t find_first_not_of(const char* s) const {
+        if (this->empty()) return npos;
+        size_t r = strspn(this->c_str(), s);
+        return _p->s[r] ? r : npos;
+    }
+
+    size_t find_first_not_of(char c) const {
+        char s[2] = { c, '\0' };
+        return this->find_first_not_of((const char*)s);
+    }
 
     size_t find_last_of(const char* s) const;
     size_t find_last_not_of(const char* s) const;
     size_t find_last_not_of(char c) const;
 
-    void replace(const char* sub, const char* to, uint32_t maxreplace=-1);
+    // @maxreplace: 0 for unlimited
+    void replace(const char* sub, const char* to, size_t maxreplace=0);
 
     void strip(const char* s=" \t\r\n", char d='b');
     
@@ -245,8 +241,11 @@ class fastring {
         return this->starts_with(s, strlen(s));
     }
 
-    template<typename S>
-    bool starts_with(const S& s) const {
+    bool starts_with(const fastring& s) const {
+        return this->starts_with(s.data(), s.size());
+    }
+
+    bool starts_with(const std::string& s) const {
         return this->starts_with(s.data(), s.size());
     }
 
@@ -263,8 +262,11 @@ class fastring {
         return this->ends_with(s, strlen(s));
     }
 
-    template<typename S>
-    bool ends_with(const S& s) const {
+    bool ends_with(const fastring& s) const {
+        return this->ends_with(s.data(), s.size());
+    }
+
+    bool ends_with(const std::string& s) const {
         return this->ends_with(s.data(), s.size());
     }
 
@@ -276,11 +278,11 @@ class fastring {
     fastring& tolower();
 
     fastring upper() const {
-        return this->empty() ? fastring() : fastring(_p->s, _p->size).toupper();
+        return this->clone().toupper();
     }
 
     fastring lower() const {
-        return this->empty() ? fastring() : fastring(_p->s, _p->size).tolower();
+        return this->clone().tolower();
     }
 
     void swap(fastring& s) noexcept {
@@ -295,11 +297,26 @@ class fastring {
 
   private:
     void _Init(size_t cap, size_t size = 0);
-    void _Reserve(size_t n);
+
+    void _Ref() {
+        atomic_inc(&_p->refn);
+    }
+
+    size_t _UnRef() {
+        return atomic_dec(&_p->refn);
+    }
+
+    void _Reserve(size_t n) {
+        if (_p->cap < n) {
+            _p->s = (char*) realloc(_p->s, n);
+            assert(_p->s);
+            _p->cap = n;
+        }
+    }
 
     void _Ensure(size_t n) {
-        if (_p->cap < _p->size + (uint32_t)n) {
-            this->_Reserve((_p->cap * 3 >> 1) + (uint32_t)n);
+        if (_p->cap < _p->size + n) {
+            this->_Reserve((_p->cap * 3 >> 1) + n);
         }
     }
 
@@ -307,23 +324,16 @@ class fastring {
         return _p->s <= p && p < _p->s + _p->size;
     }
 
-    fastring& _Append(const void* p, size_t n) {
-        _p ? this->_Ensure(n): this->_Init(n + 1);
-        memcpy(_p->s + _p->size, p, n);
-        _p->size += (uint32_t) n;
-        return *this;
-    }
-
+    fastring& _Append(const void* p, size_t n);
     fastring& _Append_safe(const void* p, size_t n);
 
   private:
     struct _Mem {
-        uint32_t cap;
-        uint32_t size;
-        uint32_t refn;
-        uint32_t ____;
-        char s[];
-    }; // 16 bytes
+        size_t cap;
+        size_t size;
+        size_t refn;
+        char* s;
+    };
 
     _Mem* _p;
 };
@@ -440,10 +450,6 @@ inline bool operator>=(const fastring& a, const char* b) {
 
 inline bool operator>=(const char* a, const fastring& b) {
     return !(b > a);
-}
-
-inline void swap(fastring& lhs, fastring& rhs) noexcept {
-    lhs.swap(rhs);
 }
 
 inline std::ostream& operator<<(std::ostream& os, const fastring& s) {

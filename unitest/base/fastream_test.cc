@@ -18,6 +18,16 @@ DEF_test(fastream) {
         EXPECT_EQ(fs.str(), "xx");
         EXPECT_EQ(std::string(fs.c_str()), "xx");
 
+        fastream x(std::move(fs));
+        EXPECT_EQ(x.str(), "xx");
+        EXPECT_EQ(fs.capacity(), 0);
+        EXPECT_EQ(fs.size(), 0);
+        EXPECT_EQ(fs.str(), "");
+
+        fs << "xx";
+        EXPECT_EQ(fs.size(), 2);
+        EXPECT_EQ(fs.str(), "xx");
+
         fs.clear();
         EXPECT(fs.empty());
         EXPECT_EQ(fs.size(), 0);
@@ -137,6 +147,7 @@ DEF_test(fastream) {
     }
 
     DEF_case(magic) {
+        EXPECT_EQ((magicstream()).str(), "");
         EXPECT_EQ((magicstream() << 123).str(), "123");
         EXPECT_EQ((magicstream() << "hello" << 123).str(), "hello123");
     }

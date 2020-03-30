@@ -18,7 +18,13 @@ DEF_test(fastring) {
 
         s.reserve(128);
         EXPECT_EQ(s, t);
-        EXPECT_NE(s.data(), t.data());
+        EXPECT_EQ(s.data(), t.data());
+        EXPECT_EQ(*(void**)&s, *(void**)&t);
+
+        t = std::string("888");
+        EXPECT_EQ(s, "888");
+        EXPECT_EQ(s, t);
+        EXPECT_EQ(*(void**)&s, *(void**)&t);
     }
 
     DEF_case(append) {

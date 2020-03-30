@@ -10,7 +10,7 @@
 - CO contains the following functional components:
     - Basic definitions (def)
     - Atomic operations (atomic)
-    - Fast random number generator (ramdom)
+    - Fast random number generator (random)
     - LruMap
     - Fast string casting for basic types (fast)
     - Efficient byte stream (fastream)
@@ -40,7 +40,7 @@
 
 - [English md](https://github.com/idealvin/co/tree/master/docs/en)
 - [中文 md](https://github.com/idealvin/co/tree/master/docs/cn)
-- [中文 pdf](https://code.aliyun.com/idealvin/docs/blob/3ca20c3ea964924aef83a68d12941cbff9378588/pdf/co.pdf)
+- [中文 pdf](https://code.aliyun.com/idealvin/docs/blob/9cb3feb78a35dc6cc1f13d6d93003f6150d047f9/pdf/co.pdf)
 
 ## Highlight function
 

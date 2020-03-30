@@ -10,7 +10,7 @@
 - CO 包含如下的功能组件：
     - 基本定义(def)
     - 原子操作(atomic)
-    - 快速随机数生成器(ramdom)
+    - 快速随机数生成器(random)
     - LruMap
     - 基本类型快速转字符串(fast)
     - 高效字符流(fastream)
@@ -40,7 +40,7 @@
 
 - [English md](https://github.com/idealvin/co/tree/master/docs/en)
 - [中文 md](https://github.com/idealvin/co/tree/master/docs/cn)
-- [中文 pdf](https://code.aliyun.com/idealvin/docs/blob/3ca20c3ea964924aef83a68d12941cbff9378588/pdf/co.pdf)
+- [中文 pdf](https://code.aliyun.com/idealvin/docs/blob/9cb3feb78a35dc6cc1f13d6d93003f6150d047f9/pdf/co.pdf)
 
 ## 亮点功能
 
