@@ -464,7 +464,7 @@ inline const char* read_string(const char* b, const char* e, void** v) {
 inline const char* read_key(const char* b, const char* e, char** key) {
     const char* p = (const char*) memchr(b, '"', e - b);
     if (p ) {
-        char* s = (char*) Json::Jalloc::instance()->alloc(p - b + 1);
+        char* s = (char*) Json::Jalloc::instance()->alloc((uint32)(p - b + 1));
         memcpy(s, b, p - b);
         s[p - b] = '\0';
         *key = s;
@@ -472,20 +472,55 @@ inline const char* read_key(const char* b, const char* e, char** key) {
     return p;
 }
 
-inline int64 fastatoi(const char* s, size_t n) {
-    int64 v = 0;
-    bool neg = (*s == '-');
+int64 fastatoi(const char* s, size_t n) {
+    uint64 v = 0;
+    size_t i = 0;
 
-    for (size_t i = neg; i < n; ++i) {
+    if (*s != '-') { /* positiv */
+        if (unlikely(*s == '+')) { ++s; --n; }
+        if (unlikely(n == 0)) throw 0;
+
+        for (; i < n - 1; ++i) {
+            if (unlikely(s[i] < '0' || s[i] > '9')) throw 0;
+            v = v * 10 + s[i] - '0';
+        }
+
         if (unlikely(s[i] < '0' || s[i] > '9')) throw 0;
-        v = v * 10 + s[i] - '0';
-    }
 
-    return neg ? -v : v;
+        if (n < 20) return v * 10 + s[i] - '0';
+ 
+        if (n == 20) {
+            if (v > (MAX_UINT64 - (s[i] - '0')) / 10) throw 0;
+            return v * 10 + s[i] - '0';
+        } 
+
+        throw 0; // n > 20
+
+    } else {
+        ++s;
+        --n;
+        if (unlikely(n == 0)) throw 0;
+
+        for (; i < n - 1; ++i) {
+            if (unlikely(s[i] < '0' || s[i] > '9')) throw 0;
+            v = v * 10 + s[i] - '0';
+        }
+
+        if (unlikely(s[i] < '0' || s[i] > '9')) throw 0;
+
+        if (n < 19) return -static_cast<int64>(v * 10 + s[i] - '0');
+
+        if (n == 19) {
+            if (v > (static_cast<uint64>(MIN_INT64) - (s[i] - '0')) / 10) throw 0;
+            return -static_cast<int64>(v * 10 + s[i] - '0');
+        } 
+
+        throw 0; // n > 19
+    }
 }
 
 inline const char* read_token(const char* b, const char* e, void** v) {
-    bool is_int = true;
+    bool is_double = false;
     const char* p = b++;
 
     for (; b < e; ++b) {
@@ -503,7 +538,7 @@ inline const char* read_token(const char* b, const char* e, void** v) {
                 new (v) Value();
             } else {
                 try {
-                    if (is_int) {
+                    if (!is_double) {
                         new (v) Value(fastatoi(p, b - p));
                     } else {
                         new (v) Value(str::to_double(fastring(p, b - p)));
@@ -514,10 +549,8 @@ inline const char* read_token(const char* b, const char* e, void** v) {
             }
             return b - 1;
 
-        } else if (c == '.') {
-            is_int = false;
-        } else if (c == 'e' || c == 'E') {
-            if (*(b + 1) == '-') is_int = false;
+        } else if (c == '.' || c == 'e' || c == 'E') {
+            is_double = true;
         }
     }
 
